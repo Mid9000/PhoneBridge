@@ -64,12 +64,13 @@ public sealed class ReplyQueue
 {
     readonly Database _db;
     readonly OutboxQueue _outbox;
-    readonly IReadOnlyList<IReplyChannel> _channels;
+    readonly IEnumerable<IReplyChannel> _channels;
     readonly TimeProvider _time;
 
+    /// <param name="channels">Enumerated on every send, so a channel created after the server (Bluetooth) can still join.</param>
     public ReplyQueue(Database db, OutboxQueue outbox, IEnumerable<IReplyChannel>? channels = null, TimeProvider? time = null)
     {
-        (_db, _outbox, _channels, _time) = (db, outbox, (channels ?? []).ToList(), time ?? TimeProvider.System);
+        (_db, _outbox, _channels, _time) = (db, outbox, channels ?? [], time ?? TimeProvider.System);
         _outbox.Delivered += item =>
         {
             if (item.Kind != OutboxKinds.Reply || item.MessageId is not long id) return;

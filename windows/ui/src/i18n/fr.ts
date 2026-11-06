@@ -90,6 +90,13 @@ export const fr = {
     unpairedTitle: 'Aucun iPhone appairé',
     unpairedBody: 'Ouvrez l’app PhoneBridge sur l’iPhone et scannez le QR code affiché par le PC.',
     gauge: (n: number) => `Batterie à ${n} %`,
+    issue: {
+      noAdapter: 'Aucun adaptateur Bluetooth actif sur ce PC.',
+      notPaired: 'L’iPhone n’est pas appairé en Bluetooth à ce PC (Paramètres Windows > Bluetooth et appareils).',
+      notificationsDenied: 'Notifications refusées : sur l’iPhone, Réglages > Bluetooth > (i) à côté du PC > Afficher les notifications.',
+      messagesDenied: 'Messages refusés : sur l’iPhone, Réglages > Bluetooth > (i) à côté du PC > Afficher les notifications de messages.',
+      unreachable: 'iPhone hors de portée, ou service occupé par une autre app (Lien avec Windows).',
+    },
   },
   settings: {
     appearance: 'Apparence', windowStyle: 'Style de fenêtre', windowMac: 'macOS', windowWin: 'Windows',
@@ -101,6 +108,8 @@ export const fr = {
     privacy: 'Vie privée', keepHistory: 'Conserver l’historique',
     keepHistoryHint: 'Stocké uniquement sur ce PC. Désactivé : rien n’est écrit sur le disque.',
     hello: 'Protéger les messages avec Windows Hello',
+    bluetooth: 'Bluetooth (expérimental)', bluetoothToggle: 'Notifications, appels et messages par Bluetooth',
+    bluetoothHint: 'L’iPhone doit être appairé à ce PC dans les paramètres Bluetooth de Windows. Désactivé : rien n’est tenté.',
     network: 'Réseau', shortcutsHttp: 'Canal HTTP pour les Raccourcis',
     shortcutsHttpHint: 'Les Raccourcis iOS refusent le HTTPS auto-signé. Ce canal n’est pas chiffré et n’accepte que le réseau local.',
     downloads: 'Dossier de réception', change: 'Modifier…',

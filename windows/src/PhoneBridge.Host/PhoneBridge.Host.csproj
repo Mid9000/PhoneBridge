@@ -35,6 +35,7 @@
   <ItemGroup>
     <ProjectReference Include="..\PhoneBridge.Core\PhoneBridge.Core.csproj" />
     <ProjectReference Include="..\PhoneBridge.Server\PhoneBridge.Server.csproj" />
+    <ProjectReference Include="..\PhoneBridge.Bluetooth\PhoneBridge.Bluetooth.csproj" />
   </ItemGroup>
 
 </Project>

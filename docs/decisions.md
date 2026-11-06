@@ -18,3 +18,13 @@
 - 2026-11-06 — Fichiers reçus marqués « venant d'Internet » (Zone.Identifier). Raison : SmartScreen/mode protégé d'Office s'appliquent aux fichiers de l'iPhone.
 - 2026-11-06 — Fermer la fenêtre la masque (l'app reste dans la zone de notification) ; « Quitter » dans le menu de l'icône. Raison : comportement d'app Mac, le serveur doit rester joignable.
 - 2026-11-06 — Le QR d'appairage s'affiche dans une petite fenêtre native, pas dans l'UI web. Raison : le secret ne transite pas par le pont, et le contrat UI n'a pas de message pour ça.
+- 2026-11-06 — iOS : « Copier le jeton » (Réglages → Raccourcis) après confirmation, presse-papiers local 2 min ; le jeton n'est jamais renvoyé au presse-papiers du PC. Raison : seul moyen de remplir `Bearer <JETON>` dans Raccourcis, sans exposer le jeton à l'historique/synchronisation du presse-papiers Windows.
+- 2026-11-06 — Bluetooth dans l'hôte derrière le réglage `bluetooth` (défaut : désactivé) ; toute panne devient `connection.bluetooth`/`bluetoothIssue` + nouvel essai toutes les 60 s, jamais d'exception vers l'hôte. Raison : spikes non validés sur l'iPhone, l'app Wi-Fi doit rester intacte.
+- 2026-11-06 — Logique Bluetooth (`BluetoothService`) dans `PhoneBridge.Bluetooth` (référence Core), WinRT isolé derrière `IIphoneLinks`. Raison : testable avec les faux iPhone sans matériel ni WPF.
+- 2026-11-06 — Nouvelle session ANCS = la liste des notifications du PC est remplacée par celle de l'iPhone. Raison : iOS renvoie toutes les notifications présentes à chaque abonnement (sinon doublons) ; comportement miroir comme sur Mac.
+- 2026-11-06 — Message MAP reçu : service de la conversation existante, sinon `sms`. Raison : iOS déclare `SMS_GSM` même pour iMessage.
+- 2026-11-06 — Réponse par MAP seulement vers un numéro ou un e-mail ; un nom (relais Raccourcis) passe par l'outbox. Raison : MAP ne peut pas adresser un nom, et le statut `sent` doit rester honnête.
+- 2026-11-06 — Contacts PBAP gardés en mémoire seulement, rapprochés sur les 9 derniers chiffres. Raison : vie privée (rien sur disque) ; « +33 6… » et « 06… » désignent le même numéro.
+- 2026-11-06 — Notifications Messages reçues par ANCS sans toast quand MAP livre les messages. Raison : éviter le double toast.
+- 2026-11-06 — Fermer une notification sur le PC l'efface aussi sur l'iPhone (action négative ANCS), sauf pour un appel. Raison : comportement Mac ; « fermer » ne doit jamais refuser un appel.
+- 2026-11-06 — Bluetooth désactivé dans les réglages = pas de bandeau « connexion partielle ». Raison : c'est un choix, pas une panne.

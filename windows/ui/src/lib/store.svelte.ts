@@ -32,8 +32,10 @@ export function go(section: SectionId, conversationId?: string) {
 export type PhoneStatus = 'unpaired' | 'connected' | 'partial' | 'away';
 export function phoneStatus(c: Connection): PhoneStatus {
   if (!c.paired) return 'unpaired';
-  const up = [c.wifi, c.bluetooth].filter((s) => s === 'connected').length;
-  return up === 2 ? 'connected' : up === 1 ? 'partial' : 'away';
+  // Bluetooth turned off in settings is a choice, not a degraded link.
+  const links = c.bluetooth === 'off' ? [c.wifi] : [c.wifi, c.bluetooth];
+  const up = links.filter((s) => s === 'connected').length;
+  return up === links.length ? 'connected' : up > 0 ? 'partial' : 'away';
 }
 
 export function sendFiles(files: File[]) {

@@ -32,7 +32,7 @@ Contract between the Svelte UI (`windows/ui`) and the C# host (`PhoneBridge.Host
 | Field | Type | Notes |
 |---|---|---|
 | `host` | `{ version, mica, maximized }` | |
-| `connection` | `{ paired, phoneName, pcName, wifi, bluetooth, lastSeenAt }` | `wifi`/`bluetooth`: `connected` `connecting` `disconnected` `off` `unavailable` |
+| `connection` | `{ paired, phoneName, pcName, wifi, bluetooth, bluetoothIssue?, lastSeenAt }` | `wifi`/`bluetooth`: `connected` `connecting` `disconnected` `off` `unavailable`. `bluetooth: 'off'` = disabled in settings (not a degraded link, no banner). `bluetoothIssue`: `noAdapter` `notPaired` `notificationsDenied` `messagesDenied` `unreachable`, sent even while partly connected; the UI words it |
 | `battery` | `{ level: 0-100 \| null, charging, updatedAt, source? }` | `null` = never received |
 | `conversations` | `Conversation[]` | `{ id, name, handle, service: 'imessage'\|'sms', lastMessage, lastAt, unread }`, newest first |
 | `notifications` | `PhoneNotification[]` | `{ id, appId, appName, category, title, subtitle?, body, at, positiveAction?, negativeAction? }` |
@@ -40,7 +40,7 @@ Contract between the Svelte UI (`windows/ui`) and the C# host (`PhoneBridge.Host
 | `clipboard` | `ClipboardItem[]` | `{ id, kind: 'text'\|'url'\|'image', text?, imageDataUrl? (small thumbnail), origin: 'phone'\|'pc', at }`. Sensitive items (OTP, passwords) are never sent |
 | `calls` | `Call[]` | `{ id, name, handle, kind: 'incoming'\|'outgoing'\|'missed', at, durationSec?, ringing? }` |
 | `devices` | `PairedDevice[]` | `{ id, name, pairedAt, lastSeenAt, current }` |
-| `settings` | `Settings` | `{ windowStyle, theme: 'system'\|'light'\|'dark', toasts, clipboardAuto, otpAutoCopy, keepHistory, helloLock, shortcutsHttp, downloadDir }` |
+| `settings` | `Settings` | `{ windowStyle, theme: 'system'\|'light'\|'dark', toasts, clipboardAuto, otpAutoCopy, keepHistory, helloLock, shortcutsHttp, bluetooth, downloadDir }`. `bluetooth` (default `false`): ANCS/MAP/PBAP on or off |
 
 Threads are not in the snapshot: they are loaded on demand (`openConversation` â†’ `messages`).
 
@@ -74,8 +74,8 @@ Threads are not in the snapshot: they are loaded on demand (`openConversation` â
 | `openConversation` | `conversationId` | Mark read (MAP SetMessageStatus when available), answer `messages` + `conversations`. Treat it as the open thread until another one is opened |
 | `sendMessage` | `clientId, conversationId? \| to?, body` | Use `clientId` as the message `id`; push `message` with `status:'sending'`, then `sent` / `queued` / `failed`. With `to` (new message): find or create the conversation and send `navigate` with its id |
 | `retryMessage` | `messageId` | Resend a failed message |
-| `dismissNotification` | `id` | ANCS negative action / dismiss, then `notificationRemoved` |
-| `notificationAction` | `id, action: 'positive'\|'negative'` | ANCS PerformNotificationAction |
+| `dismissNotification` | `id` | Remove locally, and ANCS negative action (Clear) on the iPhone when it offers one (never on calls), then `notificationRemoved` |
+| `notificationAction` | `id, action: 'positive'\|'negative'` | ANCS PerformNotificationAction; the iPhone then removes it (`notificationRemoved`). Error `toast` when Bluetooth is not connected |
 | `clearNotifications` | | Clear list, answer `notifications: []` |
 | `sendFiles` | `names[]` + File objects | Queue PC â†’ iPhone transfers (outbox), push `transfer` updates |
 | `cancelTransfer` / `retryTransfer` / `revealTransfer` | `id` | Cancel / restart / open Explorer with the file selected |
@@ -84,7 +84,7 @@ Threads are not in the snapshot: they are loaded on demand (`openConversation` â
 | `deleteClipboardItem` / `clearClipboard` | `id` / â€“ | Answer `clipboard` |
 | `pushClipboard` | | Publish the current PC clipboard to the outbox |
 | `openLink` | `url` | Open in the default browser, **http/https only** |
-| `callAction` | `id, action: 'answer'\|'decline'` | ANCS positive/negative action on the incoming-call notification |
+| `callAction` | `id, action: 'answer'\|'decline'` | ANCS positive/negative action on the incoming-call notification (`call.id` = its notification id). Error `toast` when Bluetooth is not connected |
 | `startPairing` | | Show the pairing QR flow |
 | `revokeDevice` | `id` | Revoke the device token, answer `devices` |
 | `setSettings` | `patch: Partial<Settings>` | Persist, apply, answer `settings` |

@@ -72,10 +72,29 @@ final class AppModel: ObservableObject {
     /// other apps reading the clipboard within 2 minutes (iOS shows a paste prompt for those).
     func copyConfigForExtensions() {
         guard let pairing, let text = PairingStore.exportString(pairing) else { return }
+        copySecret(text)
+        message = String(localized: "Configuration copiée (2 min). Partagez quelque chose vers « Envoyer au PC » et touchez Coller.")
+    }
+
+    /// For the Shortcuts `Authorization: Bearer <token>` header (docs/shortcuts-guide.md).
+    func copyToken() {
+        guard let token = pairing?.token else { return }
+        copySecret(token)
+        message = String(localized: "Jeton copié (2 min). Collez-le après « Bearer » dans vos raccourcis.")
+    }
+
+    func copyShortcutsAddress() {
+        guard let address = pairing?.config.shortcutsAddress else { return }
+        UIPasteboard.general.string = address
+        lastPasteboardChange = UIPasteboard.general.changeCount
+        message = String(localized: "Adresse copiée.")
+    }
+
+    /// Local-only (no Universal Clipboard), expires after 2 minutes; not echoed to the PC.
+    private func copySecret(_ text: String) {
         UIPasteboard.general.setItems([[UTType.plainText.identifier: text]],
                                       options: [.localOnly: true, .expirationDate: Date().addingTimeInterval(120)])
         lastPasteboardChange = UIPasteboard.general.changeCount
-        message = String(localized: "Configuration copiée (2 min). Partagez quelque chose vers « Envoyer au PC » et touchez Coller.")
     }
 
     // MARK: Lifecycle

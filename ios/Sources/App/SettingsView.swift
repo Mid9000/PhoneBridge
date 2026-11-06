@@ -8,6 +8,7 @@ struct SettingsView: View {
     @AppStorage(SettingsKey.notifications) private var notifications = true
     @State private var showRepair = false
     @State private var confirmForget = false
+    @State private var confirmCopyToken = false
 
     var body: some View {
         Form {
@@ -18,15 +19,35 @@ struct SettingsView: View {
                     if let version = model.status?.version {
                         LabeledContent("Version sur le PC", value: version)
                     }
-                    if let http = config.httpPort, model.status?.features?.shortcutsHttp == true {
-                        LabeledContent("Port HTTP des Raccourcis", value: String(http))
-                    }
                 }
                 Button("Rechercher le PC sur le réseau") { model.discovery.start() }
                 Button("Ré-appairer…") { showRepair = true }
                 Button("Oublier ce PC", role: .destructive) { confirmForget = true }
             } header: {
                 Text("Appareil appairé")
+            }
+
+            if let config = model.pairing?.config {
+                Section {
+                    // Hidden only when the PC says the HTTP channel is off; unknown status (offline) still shows it.
+                    if let address = config.shortcutsAddress, model.status?.features?.shortcutsHttp != false {
+                        LabeledContent("Adresse pour les Raccourcis") {
+                            HStack {
+                                Text(verbatim: address).textSelection(.enabled)
+                                Button { model.copyShortcutsAddress() } label: {
+                                    Image(systemName: "doc.on.doc")
+                                }
+                                .buttonStyle(.borderless)
+                                .accessibilityLabel("Copier l'adresse")
+                            }
+                        }
+                    }
+                    Button("Copier le jeton") { confirmCopyToken = true }
+                } header: {
+                    Text("Raccourcis")
+                } footer: {
+                    Text("Le jeton va dans l'en-tête Authorization : « Bearer » suivi du jeton. Ne partagez jamais un raccourci qui le contient.")
+                }
             }
 
             Section {
@@ -91,6 +112,12 @@ struct SettingsView: View {
             Button("Oublier", role: .destructive) { model.unpair() }
         } message: {
             Text("Il faudra scanner à nouveau le QR code. Pensez aussi à révoquer cet iPhone sur le PC.")
+        }
+        .alert("Copier le jeton ?", isPresented: $confirmCopyToken) {
+            Button("Copier") { model.copyToken() }
+            Button("Annuler", role: .cancel) {}
+        } message: {
+            Text("Ce jeton donne accès à votre PC. Collez-le uniquement dans vos propres raccourcis. Il reste 2 minutes dans le presse-papiers, uniquement sur cet iPhone. En cas de fuite, révoquez cet iPhone sur le PC.")
         }
     }
 }

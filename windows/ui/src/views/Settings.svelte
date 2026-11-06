@@ -14,7 +14,7 @@
   const s = $derived(app.settings);
 </script>
 
-{#snippet toggleRow(key: 'toasts' | 'clipboardAuto' | 'otpAutoCopy' | 'keepHistory' | 'helloLock' | 'shortcutsHttp', label: string, hint?: string)}
+{#snippet toggleRow(key: 'toasts' | 'clipboardAuto' | 'otpAutoCopy' | 'keepHistory' | 'helloLock' | 'shortcutsHttp' | 'bluetooth', label: string, hint?: string)}
   <div class="row">
     <div class="text"><span id="lbl-{key}">{label}</span>{#if hint}<span class="hint">{hint}</span>{/if}</div>
     <Toggle checked={s[key]} {label} onchange={(v) => set({ [key]: v })} />
@@ -52,6 +52,14 @@
     <div class="group">
       {@render toggleRow('keepHistory', t.settings.keepHistory, t.settings.keepHistoryHint)}
       {@render toggleRow('helloLock', t.settings.hello)}
+    </div>
+
+    <h2 class="group-title">{t.settings.bluetooth}</h2>
+    <div class="group">
+      {@render toggleRow('bluetooth', t.settings.bluetoothToggle, t.settings.bluetoothHint)}
+      {#if s.bluetooth && app.connection.bluetoothIssue}
+        <div class="row warn" role="status"><TriangleAlert size={14} strokeWidth={1.9} /><span class="hint">{t.phone.issue[app.connection.bluetoothIssue]}</span></div>
+      {/if}
     </div>
 
     <h2 class="group-title">{t.settings.network}</h2>

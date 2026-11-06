@@ -103,6 +103,17 @@ describe('mock host', () => {
     expect(last?.type === 'message' && last.message.status).toBe('queued');
   });
 
+  it('turning Bluetooth off answers settings and an "off" connection, then replies go to the relay', () => {
+    const { out, handle } = start('');
+    handle({ type: 'setSettings', patch: { bluetooth: false } });
+    const conn = out.filter((m) => m.type === 'connection').at(-1);
+    expect(conn?.type === 'connection' && conn.connection.bluetooth).toBe('off');
+    handle({ type: 'sendMessage', clientId: 'x3', conversationId: 'c-lea', body: 'Salut' });
+    vi.advanceTimersByTime(1000);
+    const last = out.filter((m) => m.type === 'message').at(-1);
+    expect(last?.type === 'message' && last.message.status).toBe('queued');
+  });
+
   it('honours preview params (unpaired, theme)', () => {
     const { out } = start('scenario=unpaired&theme=dark');
     const state = out.find((m) => m.type === 'state');

@@ -12,7 +12,8 @@ enum ClipboardBridge {
             return ClipboardPost(kind: "url", text: url.absoluteString, imageBase64: nil)
         }
         if pasteboard.hasStrings, let text = pasteboard.string, !text.isEmpty,
-           !text.hasPrefix(PairingStore.exportPrefix) { // never ship the plan-B config to the PC clipboard
+           !text.hasPrefix(PairingStore.exportPrefix), // never ship the plan-B config or the token to the PC clipboard
+           text.trimmingCharacters(in: .whitespacesAndNewlines) != PairingStore.load()?.token {
             return .text(text)
         }
         return nil

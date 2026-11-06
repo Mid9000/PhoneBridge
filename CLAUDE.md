@@ -27,4 +27,4 @@ Le fil principal orchestre et délègue ; il n'écrit pas de gros blocs de code 
 `windows/` (.NET 8 : Core, Server, Bluetooth, Host + `ui/` Svelte), `ios/` (SwiftUI + XcodeGen, build via GitHub Actions), `shortcuts/`, `tools/` (spikes), `design/`, `docs/`.
 
 ## Environnement (vérifié 2026-11-06)
-Windows 11, PowerShell. Présents : git 2.55, Node 24, Python 3.14. **Absents : .NET SDK, Java récent** -> .NET 8 SDK à installer (voir docs/progress.md, tâche en attente de l'accord d'Arthur).
+Windows 11, PowerShell. Présents : git, Node 24, Python 3.14, **.NET 8 SDK** (`C:\Program Files\dotnet`, ajouter au PATH du shell si besoin). **Smart App Control est actif** : les builds **Release** non signés sont bloqués (exe/DLL) -> lancer en **Debug** (`windows\scripts\run-dev.ps1`). Ne jamais désactiver SAC sans décision d'Arthur (irréversible). Le Swift n'est jamais compilé localement : seule la CI macOS le valide.

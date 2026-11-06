@@ -25,6 +25,14 @@
 - [ ] Raccourcis iOS (`shortcuts/` + `docs/shortcuts-guide.md`)
 - [ ] Critères d'acceptation Phase 1 sur le vrai iPhone (vidéo 500 Mo, SMS < 5 s, OTP, lien Safari, Toucher le dos, requête sans jeton)
 
+## Phases 2-4 — Bluetooth branché dans l'hôte (code prêt, jamais testé avec un iPhone)
+- [x] Réglage « Bluetooth (expérimental) », **désactivé par défaut** ; aucune panne ne fait planter l'hôte, l'état et la cause s'affichent (iPhone, Réglages, `GET /v1/status`) — `docs/bluetooth.md`
+- [x] ANCS : notifications -> base + UI + toast + OTP ; appels entrants -> toast Répondre/Refuser (action ANCS) ; fermer sur le PC efface sur l'iPhone
+- [x] MAP : messages reçus -> base + toast avec réponse ; réponses par MAP (`sent`) sinon relais (`queued`) ; lu/non lu dans les deux sens (iPhone -> PC **[À VÉRIFIER]**)
+- [x] PBAP : noms des contacts dans les conversations (mémoire seulement)
+- [x] `PhoneBridge.exe --bluetooth-smoke` (sans iPhone : `state=unavailable issue=notPaired`, sortie 0) ; tests avec faux iPhone (15 nouveaux, 80 au total côté Bluetooth)
+- [ ] Validation sur l'iPhone d'Arthur (après les spikes `spike-ancs` / `spike-map`)
+
 ## Phase 5 — App iOS (code écrit, jamais compilé : premier build = CI GitHub)
 - [x] `ios/` : XcodeGen, app SwiftUI (QR + saisie manuelle, HTTPS épinglé, Bonjour, carte d'état, « Reçu du PC » avec reprise Range, presse-papiers, réglages, guide), Share Extension (arrière-plan si App Group), App Intents, widget + commandes iOS 18, XCTest — voir `ios/README.md`
 - [x] CI `.github/workflows/ios.yml` (tests simulateur + .ipa non signée) ; guide `docs/ios-install.md`
@@ -35,6 +43,7 @@
 2. Version d'iOS de l'iPhone 13 (Réglages → Général → Informations → Version iOS).
 3. Je peux lancer moi-même `Get-PnpDevice -Class Bluetooth` et `winver` pour le PC (lecture seule) : OK ?
 4. Un compte GitHub (gratuit) pour la CI iOS : as-tu déjà un compte ? Dépôt privé ou public ?
+5. Le « Contrôle intelligent des applications » de Windows (Smart App Control, actif) bloque depuis cette nuit les nouvelles DLL Release non signées (`PhoneBridge.dll`, `PhoneBridge.Bluetooth.dll`) ; les builds Debug passent. Le désactiver est un compromis de sécurité (irréversible sans réinstaller Windows) : ne rien changer pour l'instant, je teste en Debug ; à trancher avant d'utiliser la version publiée.
 
 ## Phases suivantes
 Voir SPEC §12 : P1 Design + socle Wi-Fi • P2 SPIKE ANCS • P3 SPIKE MAP/PBAP • P4 Messagerie • P5 App iOS • P6 Confort • P7 Stretch.

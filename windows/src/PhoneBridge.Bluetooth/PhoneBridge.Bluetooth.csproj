@@ -7,6 +7,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\PhoneBridge.Core\PhoneBridge.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
     <InternalsVisibleTo Include="PhoneBridge.Bluetooth.Tests" />
   </ItemGroup>
 

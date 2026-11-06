@@ -13,6 +13,7 @@ public sealed class AppSettings
     public bool KeepHistory { get; set; } = true;
     public bool HelloLock { get; set; }
     public bool ShortcutsHttp { get; set; } = true;           // SPEC §4: on by default in phase 1
+    public bool Bluetooth { get; set; }                       // ANCS/MAP/PBAP: off until validated on Arthur's iPhone
     public string DownloadDir { get; set; } = DefaultDownloadDir();
     public bool ConfirmLinks { get; set; }
     public long MaxFileSizeMb { get; set; } = 4096;

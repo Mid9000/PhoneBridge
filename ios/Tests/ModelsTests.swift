@@ -36,6 +36,11 @@ final class ModelsTests: XCTestCase {
         XCTAssertEqual(config.url("/events", scheme: "wss")?.absoluteString, "wss://192.168.1.20:47821/v1/events")
         config.host = "fe80::1"
         XCTAssertEqual(config.url("/status")?.absoluteString, "https://[fe80::1]:47821/v1/status")
+        XCTAssertNil(config.shortcutsAddress)
+        config.httpPort = 47822
+        XCTAssertEqual(config.shortcutsAddress, "http://[fe80::1]:47822")
+        config.host = "192.168.1.20"
+        XCTAssertEqual(config.shortcutsAddress, "http://192.168.1.20:47822")
     }
 
     func testOutboxDecodingToleratesUnknownKindsAndMissingFields() throws {

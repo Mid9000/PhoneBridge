@@ -5,6 +5,8 @@ using System.Windows;
 using System.Windows.Threading;
 using Microsoft.Toolkit.Uwp.Notifications;
 using Microsoft.Web.WebView2.Core;
+using PhoneBridge.Bluetooth;
+using PhoneBridge.Bluetooth.Platform;
 using PhoneBridge.Core;
 using PhoneBridge.Server;
 using QRCoder;
@@ -28,6 +30,7 @@ sealed class HostController : IDisposable
     readonly string _settingsPath;
     readonly AppSettings _settings;
     readonly BridgeServer _server;
+    readonly BluetoothService _bt;   // started only when settings.bluetooth is on
     readonly ConcurrentDictionary<long, string> _clientIds = new();   // db message id -> UI optimistic id
     readonly Dictionary<string, int> _unread = new();
     ClipboardService? _clipboard;
@@ -44,7 +47,15 @@ sealed class HostController : IDisposable
         _settings = AppSettings.Load(_settingsPath);
         // A custom (dev) data dir must not overwrite the real certificate password.
         var secrets = new CredentialStore(customDataDir ? $"PhoneBridge-dev-{Tokens.Hash(dataDir)[..8]}/" : "");
-        _server = new BridgeServer(new ServerOptions { DataDir = dataDir, Logger = log, Version = Version }, _settings, secrets);
+        _server = new BridgeServer(new ServerOptions { DataDir = dataDir, Logger = log, Version = Version, BluetoothState = () => _bt?.State ?? "off" },
+            _settings, secrets, BluetoothChannel());
+        _bt = new BluetoothService(new WindowsIphoneLinks(log.Write), _server.Db, _settings, log.Write);
+    }
+
+    /// <summary>Lazy: the reply queue is built before the Bluetooth service, which needs the server's database.</summary>
+    IEnumerable<IReplyChannel> BluetoothChannel()
+    {
+        if (_bt is not null) yield return _bt;
     }
 
     public static string Version => typeof(HostController).Assembly.GetName().Version?.ToString(3) ?? "0.0.0";
@@ -57,6 +68,7 @@ sealed class HostController : IDisposable
         Wire();
         await _server.StartAsync();
         _log.Write($"Server: https={_server.HttpsPort} http={_server.HttpPort?.ToString() ?? "off"} mdns={_server.MdnsActive} cert={_server.CertSha256[..16]}");
+        if (_settings.Bluetooth) _bt.Start();   // background retries: never blocks or fails the startup
 
         _clipboard = new ClipboardService();
         _clipboard.Copied += OnPcCopied;
@@ -132,26 +144,8 @@ sealed class HostController : IDisposable
                 if (_undoClipboard is not null) b.AddButton(new ToastButton().SetContent("Annuler").AddArgument("action", "undoClipboard"));
             }, silent: true);
         });
-        _server.MessageReceived += m => OnUi(() =>
-        {
-            lock (_unread) _unread[m.Peer] = _unread.GetValueOrDefault(m.Peer) + 1;
-            Post(new { type = "message", message = ToUi(m) });
-            PostConversations();
-            if (!_settings.Toasts) return;
-            Toast(b => b.AddArgument("action", "openConversation").AddArgument("peer", m.Peer)
-                .AddText(m.Peer).AddText(_settings.HelloLock ? "Nouveau message" : m.Body)
-                .AddInputTextBox("reply", "Répondre…")
-                .AddButton(new ToastButton().SetContent("Envoyer").SetTextBoxId("reply")
-                    .AddArgument("action", "reply").AddArgument("peer", m.Peer).AddArgument("service", m.Service)));
-        });
-        _server.OtpDetected += (code, _) => OnUi(() =>
-        {
-            _clipboard?.SetText(code, sensitive: true);
-            Toast(b => b.AddText($"Code {OtpDetector.Format(code)} copié").AddText("Effacé du presse-papiers dans 60 s."), silent: true);
-            var timer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(60) };
-            timer.Tick += (_, _) => { timer.Stop(); _clipboard?.ClearIfEquals(code); };
-            timer.Start();
-        });
+        _server.MessageReceived += m => OnUi(() => OnMessage(m, unread: true));
+        _server.OtpDetected += (code, _) => OnUi(() => OnOtp(code));
         _server.BatteryChanged += _ => OnUi(() => { Post(new { type = "battery", battery = BatteryUi() }); UpdateTrayText(); });
         _server.DevicePaired += d => OnUi(() =>
         {
@@ -167,12 +161,84 @@ sealed class HostController : IDisposable
             if (item.TransferId is long id && _server.Db.GetTransfer(id) is { } t) Post(new { type = "transfer", transfer = ToUi(t) });
         });
 
+        WireBluetooth();
+
         ToastNotificationManagerCompat.OnActivated += e =>
         {
             var args = ToastArguments.Parse(e.Argument);
             var input = e.UserInput.TryGetValue("reply", out var r) ? r as string : null;
             OnUi(() => OnToastActivated(args, input));
         };
+    }
+
+    void WireBluetooth()
+    {
+        _bt.StateChanged += () => OnUi(() => Post(new { type = "connection", connection = ConnectionUi() }));
+        _bt.MessageReceived += (m, unread) => OnUi(() => OnMessage(m, unread));
+        _bt.OtpDetected += code => OnUi(() => OnOtp(code));
+        _bt.ConversationRead += peer => OnUi(() =>
+        {
+            lock (_unread) _unread.Remove(peer);
+            PostConversations();
+        });
+        _bt.ContactsLoaded += () => OnUi(PostConversations);
+        _bt.NotificationsReset += () => OnUi(() => Post(new { type = "notifications", notifications = NotificationsUi() }));
+        _bt.NotificationAdded += n => OnUi(() =>
+        {
+            Post(new { type = "notification", notification = ToUi(n) });
+            if (n.Silent || n.Ringing) return;
+            var app = n.AppName ?? n.AppId;
+            Toast(b =>
+            {
+                b.AddText(_settings.HelloLock ? app : n.Title ?? app);
+                b.AddText(_settings.HelloLock ? "Nouvelle notification" : n.Body ?? "");
+                b.AddAttributionText(app);
+            });
+        });
+        _bt.NotificationRemoved += n => OnUi(() =>
+        {
+            Post(new { type = "notificationRemoved", id = $"n{n.Id}" });
+            if (n.Ringing) Post(new { type = "call", call = CallUi(n, ringing: false) });
+        });
+        _bt.IncomingCall += n => OnUi(() =>
+        {
+            Post(new { type = "call", call = CallUi(n, ringing: true) });
+            Toast(b => b.SetToastScenario(ToastScenario.IncomingCall)
+                .AddText(n.Title ?? "Appel entrant").AddText("Appel entrant sur l'iPhone")
+                .AddButton(new ToastButton().SetContent("Refuser").AddArgument("action", "call").AddArgument("id", n.Id.ToString()).AddArgument("answer", "0"))
+                .AddButton(new ToastButton().SetContent("Répondre").AddArgument("action", "call").AddArgument("id", n.Id.ToString()).AddArgument("answer", "1")));
+        });
+    }
+
+    void OnMessage(MessageRecord m, bool unread)
+    {
+        if (unread) lock (_unread) _unread[m.Peer] = _unread.GetValueOrDefault(m.Peer) + 1;
+        Post(new { type = "message", message = ToUi(m) });
+        PostConversations();
+        if (!unread) return;   // already read on the iPhone
+        Toast(b => b.AddArgument("action", "openConversation").AddArgument("peer", m.Peer)
+            .AddText(DisplayName(m.Peer)).AddText(_settings.HelloLock ? "Nouveau message" : m.Body)
+            .AddInputTextBox("reply", "Répondre…")
+            .AddButton(new ToastButton().SetContent("Envoyer").SetTextBoxId("reply")
+                .AddArgument("action", "reply").AddArgument("peer", m.Peer).AddArgument("service", m.Service)));
+    }
+
+    void OnOtp(string code)
+    {
+        _clipboard?.SetText(code, sensitive: true);
+        Toast(b => b.AddText($"Code {OtpDetector.Format(code)} copié").AddText("Effacé du presse-papiers dans 60 s."), silent: true);
+        var timer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(60) };
+        timer.Tick += (_, _) => { timer.Stop(); _clipboard?.ClearIfEquals(code); };
+        timer.Start();
+    }
+
+    string DisplayName(string peer) => _bt.Contacts.NameFor(peer) ?? peer;
+
+    /// <summary>ANCS action from the UI or a toast; tells the user when the iPhone is not reachable.</summary>
+    async Task ActOnNotification(long id, bool positive)
+    {
+        if (!await _bt.PerformActionAsync(id, positive))
+            Post(new { type = "toast", text = "Action impossible : l'iPhone n'est pas connecté en Bluetooth.", kind = "error" });
     }
 
     void OnToastActivated(ToastArguments args, string? reply)
@@ -189,6 +255,9 @@ sealed class HostController : IDisposable
                 break;
             case "reveal" when args.TryGetValue("transfer", out var id) && long.TryParse(id, out var tid):
                 if (_server.Db.GetTransfer(tid) is { } t) Shell.Reveal(t.Path);
+                break;
+            case "call" when args.TryGetValue("id", out var callId) && long.TryParse(callId, out var cid):
+                _ = ActOnNotification(cid, args.TryGetValue("answer", out var answer) && answer == "1");
                 break;
             case "downloads": Shell.OpenFolder(_settings.DownloadDir); break;
             case "openLink" when args.TryGetValue("url", out var url): Shell.OpenUrl(url); break;
@@ -244,6 +313,7 @@ sealed class HostController : IDisposable
                 case "window": WindowAction(Str("action")); break;
                 case "openConversation" when Str("conversationId") is { } conv:
                     lock (_unread) _unread.Remove(conv);
+                    _ = _bt.MarkConversationReadAsync(conv);
                     Post(new { type = "messages", conversationId = conv, messages = _server.Db.ListMessages(conv).Select(ToUi) }, source);
                     PostConversations();
                     break;
@@ -256,10 +326,17 @@ sealed class HostController : IDisposable
                     var original = FindMessage(mid);
                     if (original is not null) _ = SendReply(original.Peer, original.Body, original.Service, mid);
                     break;
-                case "dismissNotification" or "notificationAction" when Str("id") is { } nid:
-                    // shortcut: ANCS actions (positive/negative) arrive with the Bluetooth module in phase 2; for now only removes locally.
-                    if (long.TryParse(nid.TrimStart('n'), out var n)) _server.Db.DeleteNotification(n);
+                case "dismissNotification" when Str("id") is { } nid:
+                    if (NotificationId(nid) is long n)
+                    {
+                        // Clear it on the iPhone too, like a Mac; never "decline" a call by dismissing it.
+                        if (_bt.Find(n) is { Category: not "call", NegativeAction: not null }) _ = _bt.PerformActionAsync(n, positive: false);
+                        _server.Db.DeleteNotification(n);
+                    }
                     Post(new { type = "notificationRemoved", id = nid });
+                    break;
+                case "notificationAction" when NotificationId(Str("id")) is long an:
+                    _ = ActOnNotification(an, Str("action") == "positive");   // the iPhone then removes it (ANCS Removed)
                     break;
                 case "clearNotifications":
                     _server.Db.ClearNotifications();
@@ -281,7 +358,7 @@ sealed class HostController : IDisposable
                 case "clearClipboard": _server.Db.ClearClipboard(); PostClipboard(); break;
                 case "pushClipboard": PushClipboard(); break;
                 case "openLink" when Str("url") is { } url: Shell.OpenUrl(url); break;
-                case "callAction": Post(new { type = "toast", text = "Les appels arrivent dans une prochaine version.", kind = "info" }); break;
+                case "callAction" when NotificationId(Str("id")) is long callN: _ = ActOnNotification(callN, Str("action") == "answer"); break;
                 case "startPairing": StartPairing(); break;
                 case "revokeDevice" when Str("id") is { } dev:
                     _server.RevokeDevice(dev);
@@ -303,6 +380,7 @@ sealed class HostController : IDisposable
         }
     }
 
+    static long? NotificationId(string? id) => long.TryParse(id?.TrimStart('n'), out var v) ? v : null;
     static long? TransferId(string? id) => long.TryParse(id?.TrimStart('t'), out var v) ? v : null;
     static long? ClipboardId(string? id) => long.TryParse(id?.TrimStart('k'), out var v) ? v : null;
 
@@ -427,6 +505,10 @@ sealed class HostController : IDisposable
                 case "keepHistory" when isBool: _settings.KeepHistory = B(); break;
                 case "helloLock" when isBool: _settings.HelloLock = B(); break;
                 case "shortcutsHttp" when isBool: await _server.SetShortcutsHttpAsync(B()); break;
+                case "bluetooth" when isBool:
+                    _settings.Bluetooth = B();
+                    if (_settings.Bluetooth) _bt.Start(); else await _bt.StopAsync();
+                    break;
                 case "downloadDir" when v.GetString() is { } dir && Path.IsPathFullyQualified(dir): _settings.DownloadDir = dir; break;
             }
         }
@@ -497,7 +579,7 @@ sealed class HostController : IDisposable
         notifications = NotificationsUi(),
         transfers = _server.Db.ListTransfers().Select(ToUi),
         clipboard = ClipboardUi(),
-        calls = Array.Empty<object>(),
+        calls = _bt.RingingCalls().Select(n => CallUi(n, ringing: true)).ToList(),
         devices = DevicesUi(),
         settings = SettingsUi(),
     };
@@ -513,7 +595,8 @@ sealed class HostController : IDisposable
             phoneName = last?.Name ?? "",
             pcName = _settings.PcName,
             wifi = devices.Count == 0 ? "off" : recent ? "connected" : "disconnected",
-            bluetooth = "off",   // Bluetooth module: phase 2
+            bluetooth = _bt.State,
+            bluetoothIssue = _bt.Issue,
             lastSeenAt = last?.LastSeenAt,
         };
     }
@@ -530,7 +613,7 @@ sealed class HostController : IDisposable
         lock (_unread) unread = new(_unread);
         return _server.Db.ListConversationHeads().Select(m => (object)new
         {
-            id = m.Peer, name = m.Peer, handle = m.Peer, service = m.Service,
+            id = m.Peer, name = DisplayName(m.Peer), handle = m.Peer, service = m.Service,
             lastMessage = m.Body, lastAt = m.At, unread = unread.GetValueOrDefault(m.Peer),
         }).ToList();
     }
@@ -553,11 +636,23 @@ sealed class HostController : IDisposable
         direction = t.Direction, status = t.Status, at = t.At,
     };
 
-    IEnumerable<object> NotificationsUi() => _server.Db.ListNotifications().Select(n => (object)new
+    IEnumerable<object> NotificationsUi() => _server.Db.ListNotifications()
+        .Select(n => _bt.Find(n.Id) is { } live ? ToUi(live) : new
+        {
+            id = $"n{n.Id}", appId = n.AppId, appName = n.AppName ?? n.AppId, category = n.Category ?? "other",
+            title = n.Title ?? "", body = n.Body ?? "", at = n.At,
+        }).ToList();
+
+    static object ToUi(PhoneNotice n) => new
     {
-        id = $"n{n.Id}", appId = n.AppId, appName = n.AppName ?? n.AppId, category = n.Category ?? "other",
-        title = n.Title ?? "", body = n.Body ?? "", at = n.At,
-    }).ToList();
+        id = $"n{n.Id}", appId = n.AppId, appName = n.AppName ?? n.AppId, category = n.Category, title = n.Title ?? "",
+        subtitle = n.Subtitle, body = n.Body ?? "", at = n.At, positiveAction = n.PositiveAction, negativeAction = n.NegativeAction,
+    };
+
+    static object CallUi(PhoneNotice n, bool ringing) => new
+    {
+        id = $"n{n.Id}", name = n.Title ?? "Inconnu", handle = n.Title ?? "", kind = "incoming", at = n.At, ringing,
+    };
 
     IEnumerable<object> ClipboardUi() => _server.Db.ListClipboard().Select(c => (object)new
     {
@@ -576,6 +671,7 @@ sealed class HostController : IDisposable
         windowStyle = _settings.WindowStyle, theme = _settings.Theme, toasts = _settings.Toasts,
         clipboardAuto = _settings.ClipboardAuto, otpAutoCopy = _settings.OtpAutoCopy, keepHistory = _settings.KeepHistory,
         helloLock = _settings.HelloLock, shortcutsHttp = _settings.ShortcutsHttp, downloadDir = _settings.DownloadDir,
+        bluetooth = _settings.Bluetooth,
     };
 
     /// <summary>Dev/smoke only: writes the QR payload so scripts can pair without a camera.</summary>
@@ -590,7 +686,8 @@ sealed class HostController : IDisposable
     {
         _tray?.Dispose();
         _clipboard?.Dispose();
-        // Off the UI thread: the server's async stop must not wait on the (blocked) WPF dispatcher.
+        // Off the UI thread: the async stops must not wait on the (blocked) WPF dispatcher.
+        Task.Run(() => _bt.DisposeAsync().AsTask()).Wait(TimeSpan.FromSeconds(10));
         Task.Run(() => _server.DisposeAsync().AsTask()).Wait(TimeSpan.FromSeconds(10));
     }
 }

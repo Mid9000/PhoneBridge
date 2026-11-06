@@ -6,7 +6,8 @@ namespace PhoneBridge.Host;
 
 /// <summary>
 /// Entry point. Flags: --smoke (init everything, exit 0 if the server and UI came up, 1 otherwise),
-/// --smoke-wait N (stay up N seconds for scripted end-to-end tests, writes dev-pairing.json), --hidden (start in tray).
+/// --smoke-wait N (stay up N seconds for scripted end-to-end tests, writes dev-pairing.json), --hidden (start in tray),
+/// --bluetooth-smoke (one Bluetooth connection pass on a throwaway database, logs state/issue, exit 0 unless it crashed).
 /// Env: PHONEBRIDGE_DATA (data dir, default %LOCALAPPDATA%\PhoneBridge), PHONEBRIDGE_UI_URL (dev server URL).
 /// </summary>
 static class Program
@@ -19,6 +20,7 @@ static class Program
         Directory.CreateDirectory(dataDir);
         var log = new FileLogger(Path.Combine(dataDir, "logs", "host.log"));
 
+        if (args.Contains("--bluetooth-smoke")) return BluetoothSmoke(log);
         var smoke = args.Contains("--smoke");
         var wait = 0;
         var waitIndex = Array.IndexOf(args, "--smoke-wait");
@@ -66,4 +68,33 @@ static class Program
     }
 
     static void Shutdown(Application app, HostController controller) => controller.Quit();
+
+    static int BluetoothSmoke(FileLogger log)
+    {
+        var dir = Path.Combine(Path.GetTempPath(), "PhoneBridge-btsmoke-" + Guid.NewGuid().ToString("N")[..8]);
+        try
+        {
+            // Off the STA thread: WinRT Bluetooth calls are awaited on the thread pool.
+            return Task.Run(async () =>
+            {
+                var db = new Core.Database(Path.Combine(dir, "smoke.db"));
+                await using var bt = new Bluetooth.BluetoothService(new Bluetooth.Platform.WindowsIphoneLinks(log.Write), db, new Core.AppSettings(), log.Write);
+                bt.Start();
+                using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(60));
+                await bt.EnsureConnectedAsync(cts.Token);
+                log.Write($"BLUETOOTH SMOKE OK: state={bt.State} issue={bt.Issue ?? "none"} reply-channel={bt.Name}");
+                return 0;
+            }).GetAwaiter().GetResult();
+        }
+        catch (Exception e)
+        {
+            log.Write($"BLUETOOTH SMOKE FAILED: {e.GetType().Name}: {e.Message}");
+            return 1;
+        }
+        finally
+        {
+            Microsoft.Data.Sqlite.SqliteConnection.ClearAllPools();
+            try { Directory.Delete(dir, true); } catch (IOException) { }
+        }
+    }
 }

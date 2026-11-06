@@ -20,7 +20,7 @@ export function initialState(): AppState {
     conversations: [], notifications: [], transfers: [], clipboard: [], calls: [], devices: [],
     settings: {
       windowStyle: 'mac', theme: 'system', toasts: true, clipboardAuto: false, otpAutoCopy: true,
-      keepHistory: true, helloLock: false, shortcutsHttp: true, downloadDir: '',
+      keepHistory: true, helloLock: false, shortcutsHttp: true, bluetooth: false, downloadDir: '',
     },
     threads: {}, sectionErrors: {}, toasts: [], section: 'messages', conversationId: null,
   };

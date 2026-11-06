@@ -95,7 +95,7 @@ export function createDataset(scenario: Scenario, now = Date.now()) {
     devices: [{ id: 'd1', name: 'iPhone d’Arthur', pairedAt: ago(60 * 24 * 12), lastSeenAt: ago(0), current: true }],
     settings: {
       windowStyle: 'mac', theme: 'system', toasts: true, clipboardAuto: false, otpAutoCopy: true,
-      keepHistory: true, helloLock: false, shortcutsHttp: true, downloadDir: 'C:\\Users\\arthu\\Downloads\\PhoneBridge',
+      keepHistory: true, helloLock: false, shortcutsHttp: true, bluetooth: true, downloadDir: 'C:\\Users\\arthu\\Downloads\\PhoneBridge',
     },
   };
 

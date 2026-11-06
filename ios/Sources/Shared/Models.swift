@@ -62,9 +62,15 @@ struct ServerConfig: Codable, Equatable {
 
     /// Builds `https://host:port/v1<path>`; IPv6 literals get brackets.
     func url(_ path: String, scheme: String = "https") -> URL? {
-        let h = host.contains(":") && !host.hasPrefix("[") ? "[\(host)]" : host
-        return URL(string: "\(scheme)://\(h):\(port)/v1\(path)")
+        URL(string: "\(scheme)://\(urlHost):\(port)/v1\(path)")
     }
+
+    /// `http://host:httpPort` for Shortcuts (plain HTTP channel); nil when the PC has it off.
+    var shortcutsAddress: String? {
+        httpPort.map { "http://\(urlHost):\($0)" }
+    }
+
+    private var urlHost: String { host.contains(":") && !host.hasPrefix("[") ? "[\(host)]" : host }
 }
 
 struct StoredPairing: Codable, Equatable {

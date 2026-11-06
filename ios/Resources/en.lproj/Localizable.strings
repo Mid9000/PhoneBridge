@@ -49,7 +49,13 @@
 "Appareil appairé" = "Paired device";
 "Adresse" = "Address";
 "Version sur le PC" = "Version on the PC";
-"Port HTTP des Raccourcis" = "Shortcuts HTTP port";
+"Raccourcis" = "Shortcuts";
+"Adresse pour les Raccourcis" = "Address for Shortcuts";
+"Copier l'adresse" = "Copy address";
+"Copier le jeton" = "Copy token";
+"Copier le jeton ?" = "Copy the token?";
+"Ce jeton donne accès à votre PC. Collez-le uniquement dans vos propres raccourcis. Il reste 2 minutes dans le presse-papiers, uniquement sur cet iPhone. En cas de fuite, révoquez cet iPhone sur le PC." = "This token gives access to your PC. Paste it only into your own shortcuts. It stays on the clipboard for 2 minutes, on this iPhone only. If it leaks, revoke this iPhone on the PC.";
+"Le jeton va dans l'en-tête Authorization : « Bearer » suivi du jeton. Ne partagez jamais un raccourci qui le contient." = "The token goes in the Authorization header: \"Bearer\" followed by the token. Never share a shortcut that contains it.";
 "Ré-appairer…" = "Pair again…";
 "Oublier ce PC" = "Forget this PC";
 "Oublier ce PC ?" = "Forget this PC?";
@@ -90,6 +96,9 @@
 /* Messages and errors */
 "Envoyé au PC." = "Sent to PC.";
 "Copié depuis le PC." = "Copied from PC.";
+"Configuration copiée (2 min). Partagez quelque chose vers « Envoyer au PC » et touchez Coller." = "Configuration copied (2 min). Share something to \"Send to PC\" and tap Paste.";
+"Jeton copié (2 min). Collez-le après « Bearer » dans vos raccourcis." = "Token copied (2 min). Paste it after \"Bearer\" in your shortcuts.";
+"Adresse copiée." = "Address copied.";
 "Fichier reçu du PC" = "File received from PC";
 "Le presse-papiers est vide." = "The clipboard is empty.";
 "Le presse-papiers du PC est vide." = "The PC clipboard is empty.";

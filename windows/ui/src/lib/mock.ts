@@ -173,6 +173,10 @@ export function createMockHost(params: URLSearchParams, emit: (m: HostMessage) =
       case 'setSettings':
         s.settings = { ...s.settings, ...msg.patch };
         emit({ type: 'settings', settings: { ...s.settings } });
+        if (msg.patch.bluetooth !== undefined) {
+          s.connection = { ...s.connection, bluetooth: msg.patch.bluetooth ? 'connected' : 'off', bluetoothIssue: undefined };
+          emit({ type: 'connection', connection: { ...s.connection } });
+        }
         break;
       case 'pickDownloadDir':
         toast('Aperçu : l’hôte ouvrirait le sélecteur de dossier.');

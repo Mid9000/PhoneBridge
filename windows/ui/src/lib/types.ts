@@ -3,6 +3,8 @@
 
 export type Service = 'imessage' | 'sms';
 export type LinkState = 'connected' | 'connecting' | 'disconnected' | 'off' | 'unavailable';
+/** Why Bluetooth is not (fully) up; the host sends it even while partly connected. */
+export type BluetoothIssue = 'noAdapter' | 'notPaired' | 'notificationsDenied' | 'messagesDenied' | 'unreachable';
 export type SectionId = 'messages' | 'notifications' | 'files' | 'clipboard' | 'calls' | 'phone' | 'settings';
 
 export interface Connection {
@@ -10,7 +12,8 @@ export interface Connection {
   phoneName: string;
   pcName: string;
   wifi: LinkState;
-  bluetooth: LinkState;
+  bluetooth: LinkState; // 'off' = disabled in settings
+  bluetoothIssue?: BluetoothIssue;
   lastSeenAt: string | null;
 }
 
@@ -109,6 +112,7 @@ export interface Settings {
   keepHistory: boolean;
   helloLock: boolean;
   shortcutsHttp: boolean;
+  bluetooth: boolean; // ANCS notifications/calls, MAP messages, PBAP names
   downloadDir: string;
 }
 

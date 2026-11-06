@@ -37,6 +37,7 @@
           <div><dt><Bluetooth size={15} strokeWidth={1.75} />{t.phone.bluetooth}</dt><dd class={tone(app.connection.bluetooth)}>{t.link[app.connection.bluetooth]}</dd></div>
           <div><dt><Clock size={15} strokeWidth={1.75} />{t.phone.lastSeen}</dt><dd>{ago(app.connection.lastSeenAt)}</dd></div>
         </dl>
+        {#if app.connection.bluetoothIssue}<p class="hint issue" role="status">{t.phone.issue[app.connection.bluetoothIssue]}</p>{/if}
       </section>
 
       <section class="card battery" aria-label={t.phone.battery}>
@@ -93,6 +94,7 @@
   dd { margin: 0; font-weight: var(--fw-medium); }
   dd.ok { color: var(--text); }
   dd.off { color: var(--text-2); }
+  .issue { grid-column: 1 / -1; margin: 0; }
 
   .battery { display: flex; flex-direction: column; gap: var(--s-3); }
   .b-head { display: flex; align-items: center; justify-content: space-between; }
