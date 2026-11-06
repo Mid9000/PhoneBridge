@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0-windows10.0.19041.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>PhoneBridge.Spikes</RootNamespace>
+    <AssemblyName>spike-map</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="..\SpikeLog.cs" Link="SpikeLog.cs" />
+    <ProjectReference Include="..\..\windows\src\PhoneBridge.Bluetooth\PhoneBridge.Bluetooth.csproj" />
+  </ItemGroup>
+
+</Project>

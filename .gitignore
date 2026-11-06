@@ -16,3 +16,8 @@ secrets*.json
 .env
 graphify-out/
 .claude/settings.local.json
+ios/Generated/
+ios/*.xcodeproj/
+ios/build/
+ios/devices.json
+publish/

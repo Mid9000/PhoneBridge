@@ -1,0 +1,75 @@
+name: ios
+on:
+  push:
+    paths: ["ios/**", ".github/workflows/ios.yml"]
+  pull_request:
+    paths: ["ios/**", ".github/workflows/ios.yml"]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-latest
+    defaults:
+      run:
+        shell: bash
+        working-directory: ios
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Select latest stable Xcode
+        run: |
+          XCODE=$(ls -d /Applications/Xcode_*.app | grep -viE 'beta|_rc|release_candidate' | sort -V | tail -1)
+          echo "Using $XCODE"
+          sudo xcode-select -s "$XCODE/Contents/Developer"
+          xcodebuild -version
+
+      - name: Generate project
+        run: |
+          brew install xcodegen
+          mkdir -p Generated
+          xcodegen generate
+
+      - name: Test on simulator
+        run: |
+          xcrun simctl list devices available -j > devices.json
+          UDID=$(python3 - <<'EOF'
+          import json, re
+          devices = json.load(open("devices.json"))["devices"]
+          runtimes = sorted((k for k in devices if ".iOS-" in k),
+                            key=lambda k: [int(x) for x in re.findall(r"\d+", k.split(".iOS-")[1])], reverse=True)
+          print(next(d["udid"] for k in runtimes for d in devices[k] if d["name"].startswith("iPhone")))
+          EOF
+          )
+          echo "Simulator $UDID"
+          xcodebuild test \
+            -project PhoneBridge.xcodeproj -scheme PhoneBridge \
+            -destination "id=$UDID" \
+            CODE_SIGNING_ALLOWED=NO
+
+      - name: Archive (unsigned)
+        run: |
+          xcodebuild archive \
+            -project PhoneBridge.xcodeproj -scheme PhoneBridge -configuration Release \
+            -destination 'generic/platform=iOS' \
+            -archivePath build/PhoneBridge.xcarchive \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY=""
+
+      - name: Package .ipa
+        run: |
+          APP=build/PhoneBridge.xcarchive/Products/Applications/PhoneBridge.app
+          # Ad-hoc pseudo-signature only to embed the entitlements (App Group) so SideStore/AltStore
+          # can see them when they re-sign with the free Apple ID. Not a real signature.
+          codesign --force --sign - --entitlements Generated/ShareExtension.entitlements "$APP/PlugIns/ShareExtension.appex"
+          codesign --force --sign - "$APP/PlugIns/WidgetsExtension.appex"
+          codesign --force --sign - --entitlements Generated/PhoneBridge.entitlements "$APP"
+          rm -rf build/Payload && mkdir -p build/Payload
+          cp -R "$APP" build/Payload/
+          (cd build && zip -qry PhoneBridge-unsigned.ipa Payload)
+          ls -lh build/PhoneBridge-unsigned.ipa
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: PhoneBridge-unsigned-ipa
+          path: ios/build/PhoneBridge-unsigned.ipa
+          if-no-files-found: error
+          retention-days: 14

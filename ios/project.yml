@@ -1,0 +1,137 @@
+# XcodeGen spec. Generate with: xcodegen generate (CI does it, see .github/workflows/ios.yml).
+# Info.plist and entitlements are generated into Generated/ from the properties below.
+name: PhoneBridge
+
+options:
+  bundleIdPrefix: com.arthur.phonebridge
+  deploymentTarget:
+    iOS: "17.0"
+  developmentLanguage: fr
+  createIntermediateGroups: true
+
+settings:
+  base:
+    SWIFT_VERSION: "5.0"
+    SWIFT_STRICT_CONCURRENCY: minimal
+    MARKETING_VERSION: "0.1.0"
+    CURRENT_PROJECT_VERSION: "1"
+    TARGETED_DEVICE_FAMILY: "1"
+    CODE_SIGN_STYLE: Automatic
+    DEVELOPMENT_TEAM: ""
+    ENABLE_USER_SCRIPT_SANDBOXING: NO
+    LOCALIZATION_PREFERS_STRING_CATALOGS: NO
+
+targets:
+  PhoneBridge:
+    type: application
+    platform: iOS
+    sources:
+      - Sources/App
+      - Sources/Shared
+      - Sources/WidgetShared
+      - Resources
+    dependencies:
+      - target: ShareExtension
+      - target: WidgetsExtension
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.arthur.phonebridge
+        PRODUCT_NAME: PhoneBridge
+    entitlements:
+      path: Generated/PhoneBridge.entitlements
+      properties:
+        com.apple.security.application-groups:
+          - group.com.arthur.phonebridge
+    info:
+      path: Generated/PhoneBridge-Info.plist
+      properties:
+        CFBundleDisplayName: PhoneBridge
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        UILaunchScreen: {}
+        UIApplicationSceneManifest:
+          UIApplicationSupportsMultipleScenes: false
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+        UIFileSharingEnabled: true
+        LSSupportsOpeningDocumentsInPlace: true
+        NSCameraUsageDescription: "La caméra sert uniquement à scanner le QR code d'appairage affiché par le PC."
+        NSLocalNetworkUsageDescription: "PhoneBridge se connecte à votre PC sur le réseau Wi-Fi local pour échanger fichiers, liens et presse-papiers."
+        # Required by the share sheet's "Enregistrer l'image" on received files (ShareLink).
+        NSPhotoLibraryAddUsageDescription: "Pour enregistrer dans Photos les images et vidéos reçues du PC."
+        NSBonjourServices:
+          - _phonebridge._tcp
+        NSAppTransportSecurity:
+          NSAllowsLocalNetworking: true
+    scheme:
+      testTargets:
+        - PhoneBridgeTests
+
+  ShareExtension:
+    type: app-extension
+    platform: iOS
+    sources:
+      - Sources/ShareExtension
+      - Sources/Shared
+      - Resources
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.arthur.phonebridge.ShareExtension
+        APPLICATION_EXTENSION_API_ONLY: YES
+    entitlements:
+      path: Generated/ShareExtension.entitlements
+      properties:
+        com.apple.security.application-groups:
+          - group.com.arthur.phonebridge
+    info:
+      path: Generated/ShareExtension-Info.plist
+      properties:
+        CFBundleDisplayName: Envoyer au PC
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        NSLocalNetworkUsageDescription: "PhoneBridge se connecte à votre PC sur le réseau Wi-Fi local pour lui envoyer ce que vous partagez."
+        NSAppTransportSecurity:
+          NSAllowsLocalNetworking: true
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.share-services
+          NSExtensionPrincipalClass: ShareViewController
+          NSExtensionAttributes:
+            NSExtensionActivationRule:
+              NSExtensionActivationSupportsAttachmentsWithMaxCount: 100
+              NSExtensionActivationSupportsFileWithMaxCount: 100
+              NSExtensionActivationSupportsImageWithMaxCount: 100
+              NSExtensionActivationSupportsMovieWithMaxCount: 100
+              NSExtensionActivationSupportsText: true
+              NSExtensionActivationSupportsWebURLWithMaxCount: 1
+
+  WidgetsExtension:
+    type: app-extension
+    platform: iOS
+    sources:
+      - Sources/Widgets
+      - Sources/WidgetShared
+      - Resources
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.arthur.phonebridge.Widgets
+        APPLICATION_EXTENSION_API_ONLY: YES
+    info:
+      path: Generated/WidgetsExtension-Info.plist
+      properties:
+        CFBundleDisplayName: PhoneBridge
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.widgetkit-extension
+
+  PhoneBridgeTests:
+    type: bundle.unit-test
+    platform: iOS
+    # Unhosted: Shared sources are compiled straight into the test bundle (pure logic, no app needed).
+    sources:
+      - Tests
+      - Sources/Shared
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+        PRODUCT_BUNDLE_IDENTIFIER: com.arthur.phonebridge.tests

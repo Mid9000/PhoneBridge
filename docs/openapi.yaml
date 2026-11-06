@@ -1,0 +1,258 @@
+openapi: 3.0.3
+info:
+  title: PhoneBridge Wi-Fi API
+  version: "1"
+  description: |
+    Local-network API of the PhoneBridge Windows host (SPEC §4, docs/protocol.md). Maintained from
+    windows/src/PhoneBridge.Server/BridgeServer.cs.
+    HTTPS 47821 (self-signed, pin `certSha256` = SHA-256 of the DER certificate) serves every route.
+    HTTP 47822 (can be disabled) serves only routes tagged `shortcuts`.
+    Both refuse non-private client IPs (403 forbidden_network). Unknown routes: 404.
+    After 10 auth failures per minute from one IP, every authenticated route answers 429 for that IP.
+servers:
+  - url: https://{host}:47821/v1
+    variables: { host: { default: 192.168.1.20 } }
+  - url: http://{host}:47822/v1
+    description: iOS Shortcuts only ([shortcuts] routes)
+    variables: { host: { default: 192.168.1.20 } }
+security:
+  - bearer: []
+tags:
+  - name: shortcuts
+    description: Also available on HTTP 47822
+paths:
+  /pair:
+    post:
+      summary: Exchange the single-use pairing secret (QR code) for a device token
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                pairingSecret: { type: string, description: base64url, 32 bytes }
+                deviceName: { type: string, maxLength: 100 }
+                deviceId: { type: string, format: uuid, description: Re-pairing the same id replaces its old token }
+      responses:
+        "200":
+          description: Paired
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token: { type: string, description: base64url, 32 bytes }
+                  serverName: { type: string }
+                  httpPort: { type: integer, example: 47822 }
+        "401": { $ref: "#/components/responses/Error" }
+        "410": { description: Secret expired (5 min) or already used, content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
+        "429": { description: 5 failures per minute per IP, content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
+  /status:
+    get:
+      tags: [shortcuts]
+      summary: Server status. Without a token only name and version are returned.
+      security: [{}, { bearer: [] }]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  name: { type: string }
+                  version: { type: string }
+                  features:
+                    type: object
+                    properties:
+                      shortcutsHttp: { type: boolean }
+                      bluetooth: { type: string, example: "off" }
+                  time: { type: string, format: date-time }
+                  battery: { $ref: "#/components/schemas/Battery" }
+        "401": { $ref: "#/components/responses/Error" }
+  /files:
+    post:
+      tags: [shortcuts]
+      summary: Upload a file iPhone -> PC (streamed, saved under the reception folder)
+      parameters:
+        - { name: X-Filename, in: header, required: true, schema: { type: string }, description: URL-encoded UTF-8. Sanitized server-side; collisions become "name (1).ext" }
+        - { name: X-Size, in: header, schema: { type: integer }, description: Checked against the received byte count }
+        - { name: X-Sha256, in: header, schema: { type: string, pattern: "^[0-9a-fA-F]{64}$" } }
+      requestBody:
+        required: true
+        content:
+          application/octet-stream:
+            schema: { type: string, format: binary }
+      responses:
+        "201":
+          description: Saved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  savedAs: { type: string }
+                  size: { type: integer }
+                  sha256: { type: string }
+        "400": { description: bad_hash, hash_mismatch or size_mismatch (nothing is kept), content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
+        "401": { $ref: "#/components/responses/Error" }
+        "413": { $ref: "#/components/responses/Error" }
+        "507": { description: Not enough free disk space, content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
+  /outbox:
+    get:
+      tags: [shortcuts]
+      summary: Pending PC -> iPhone items
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items: { type: array, items: { $ref: "#/components/schemas/OutboxItem" } }
+  /outbox/{id}:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string } }
+    get:
+      tags: [shortcuts]
+      summary: Download a file item (Range supported) or get a non-file item as JSON
+      parameters:
+        - { name: Range, in: header, schema: { type: string, example: "bytes=1048576-" } }
+      responses:
+        "200":
+          description: Full file (application/octet-stream) or JSON item
+          content:
+            application/octet-stream: { schema: { type: string, format: binary } }
+            application/json: { schema: { $ref: "#/components/schemas/OutboxItem" } }
+        "206": { description: Partial content }
+        "404": { $ref: "#/components/responses/Error" }
+    delete:
+      tags: [shortcuts]
+      summary: Acknowledge (removes it from the outbox; a reply is then marked sent via relay)
+      responses:
+        "204": { description: Acknowledged }
+        "404": { $ref: "#/components/responses/Error" }
+  /links:
+    post:
+      tags: [shortcuts]
+      summary: Open a link on the PC (http/https only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [url]
+              properties:
+                url: { type: string, maxLength: 8192 }
+                title: { type: string }
+      responses:
+        "204": { description: Opened (or offered in a toast if confirmation is on) }
+        "400": { $ref: "#/components/responses/Error" }
+  /clipboard:
+    post:
+      tags: [shortcuts]
+      summary: iPhone -> PC clipboard. Codes (OTP) are excluded from Win+V history and from the local history.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/Clipboard" }
+      responses:
+        "204": { description: Applied }
+        "400": { $ref: "#/components/responses/Error" }
+    get:
+      tags: [shortcuts]
+      summary: Latest PC clipboard
+      responses:
+        "200": { description: OK, content: { application/json: { schema: { $ref: "#/components/schemas/Clipboard" } } } }
+        "204": { description: Nothing copied yet }
+  /messages:
+    post:
+      tags: [shortcuts]
+      summary: A message received on the iPhone (Shortcuts automation). Stored, toasted, OTP detected.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [sender, body]
+              properties:
+                sender: { type: string, maxLength: 200 }
+                body: { type: string, maxLength: 20000 }
+                service: { type: string, enum: [sms, imessage], default: sms }
+                receivedAt: { type: string, format: date-time }
+      responses:
+        "204": { description: Accepted }
+        "400": { $ref: "#/components/responses/Error" }
+  /battery:
+    post:
+      tags: [shortcuts]
+      summary: iPhone battery level
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [level]
+              properties:
+                level: { type: integer, minimum: 0, maximum: 100 }
+                charging: { type: boolean }
+                source: { type: string, enum: [shortcut, app] }
+      responses:
+        "204": { description: Accepted }
+        "400": { $ref: "#/components/responses/Error" }
+  /events:
+    get:
+      summary: WebSocket (HTTPS only). Token in Authorization header or ?token=. Server pushes {"type":"outbox","count":n} on connect and on every outbox change.
+      parameters:
+        - { name: token, in: query, schema: { type: string } }
+      responses:
+        "101": { description: Switching protocols }
+        "400": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Error" }
+components:
+  securitySchemes:
+    bearer: { type: http, scheme: bearer }
+  responses:
+    Error:
+      description: Error
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+  schemas:
+    Error:
+      type: object
+      properties:
+        error: { type: string, example: unauthorized }
+        message: { type: string }
+    Battery:
+      type: object
+      properties:
+        level: { type: integer }
+        charging: { type: boolean }
+        source: { type: string }
+        updatedAt: { type: string, format: date-time }
+    Clipboard:
+      type: object
+      properties:
+        kind: { type: string, enum: [text, url, image], default: text }
+        text: { type: string, description: "Required for text/url, max 1 MB" }
+        imageBase64: { type: string, description: "Required for image, max 20 MB" }
+        updatedAt: { type: string, format: date-time, readOnly: true }
+    OutboxItem:
+      type: object
+      properties:
+        id: { type: string }
+        kind: { type: string, enum: [file, clipboard, link, reply] }
+        name: { type: string }
+        size: { type: integer }
+        text: { type: string, description: clipboard text or reply body }
+        url: { type: string }
+        to: { type: string, description: reply recipient (phone number or iMessage address) }
+        createdAt: { type: string, format: date-time }

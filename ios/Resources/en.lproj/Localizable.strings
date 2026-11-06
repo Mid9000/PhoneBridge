@@ -1,0 +1,108 @@
+/* English. Keys are the French source texts (development language: fr).
+   Missing keys fall back to French. %@ = text, %lld = number. */
+
+/* Home */
+"Presse-papiers" = "Clipboard";
+"Presse-papiers → PC" = "Clipboard → PC";
+"Presse-papiers du PC" = "PC clipboard";
+"Récupérer le presse-papiers du PC" = "Get the PC clipboard";
+"Reçu du PC" = "Received from PC";
+"Rien pour l'instant. Sur le PC : clic droit → Envoyer à → iPhone." = "Nothing yet. On the PC: right-click → Send to → iPhone.";
+"Les fichiers reçus sont aussi dans l'app Fichiers → Sur mon iPhone → PhoneBridge. Touchez un fichier pour l'enregistrer dans Photos ou ailleurs." = "Received files are also in Files → On My iPhone → PhoneBridge. Tap a file to save it to Photos or elsewhere.";
+"Connecté à %@" = "Connected to %@";
+"%@ hors de portée" = "%@ out of reach";
+"Bluetooth : %@" = "Bluetooth: %@";
+"Mis à jour %@" = "Updated %@";
+"Rechercher le PC sur le réseau" = "Search for the PC on the network";
+"Télécharger" = "Download";
+"Copier" = "Copy";
+"Ouvrir" = "Open";
+"Envoyer" = "Send";
+"Envoyée" = "Sent";
+"Retirer" = "Remove";
+"Supprimer" = "Delete";
+"Fichier" = "File";
+"Lien" = "Link";
+"Réponse pour %@" = "Reply to %@";
+"Élément inconnu" = "Unknown item";
+"Réglages" = "Settings";
+
+/* Pairing */
+"Appairer avec le PC" = "Pair with the PC";
+"Sur le PC, ouvrez PhoneBridge → iPhone → Appairer, puis scannez le QR code." = "On the PC, open PhoneBridge → iPhone → Pair, then scan the QR code.";
+"Saisir les informations à la main" = "Enter the details manually";
+"Saisie manuelle" = "Manual entry";
+"PC trouvés sur le réseau" = "PCs found on the network";
+"Rechercher à nouveau" = "Search again";
+"Informations affichées sous le QR code" = "Details shown under the QR code";
+"Adresse IP (ex. 192.168.1.20)" = "IP address (e.g. 192.168.1.20)";
+"Port" = "Port";
+"Empreinte du certificat (64 caractères)" = "Certificate fingerprint (64 characters)";
+"Code d'appairage" = "Pairing code";
+"Appairer" = "Pair";
+"Annuler" = "Cancel";
+"Scanner de QR code" = "QR code scanner";
+"Caméra indisponible. Saisissez les informations à la main." = "Camera unavailable. Enter the details manually.";
+"Accès à la caméra refusé. Autorisez-le dans Réglages → PhoneBridge, ou saisissez les informations à la main." = "Camera access denied. Allow it in Settings → PhoneBridge, or enter the details manually.";
+
+/* Settings */
+"Appareil appairé" = "Paired device";
+"Adresse" = "Address";
+"Version sur le PC" = "Version on the PC";
+"Port HTTP des Raccourcis" = "Shortcuts HTTP port";
+"Ré-appairer…" = "Pair again…";
+"Oublier ce PC" = "Forget this PC";
+"Oublier ce PC ?" = "Forget this PC?";
+"Oublier" = "Forget";
+"Il faudra scanner à nouveau le QR code. Pensez aussi à révoquer cet iPhone sur le PC." = "You will need to scan the QR code again. Also revoke this iPhone on the PC.";
+"À l'ouverture de l'app" = "When the app opens";
+"Appliquer le presse-papiers du PC" = "Apply the PC clipboard";
+"Télécharger les fichiers reçus" = "Download received files";
+"Envoyer le presse-papiers de l'iPhone" = "Send the iPhone clipboard";
+"Notifications locales" = "Local notifications";
+"Feuille de partage" = "Share sheet";
+"Configuration partagée automatiquement" = "Configuration shared automatically";
+"Copier la configuration pour la feuille de partage" = "Copy the configuration for the share sheet";
+"Guide d'installation" = "Setup guide";
+"À propos" = "About";
+"Version" = "Version";
+"Tout reste sur votre réseau local. Aucune donnée n'est envoyée sur Internet." = "Everything stays on your local network. No data is sent to the Internet.";
+
+/* Guide */
+"Ouvrir Raccourcis" = "Open Shortcuts";
+"Ouvrir Réglages" = "Open Settings";
+
+/* Share extension */
+"Envoyer au PC" = "Send to PC";
+"Préparation…" = "Preparing…";
+"Envoi au PC…" = "Sending to PC…";
+"Fermer" = "Close";
+"Cette extension n'a pas encore l'appairage." = "This extension is not paired yet.";
+"%lld fichier(s) en cours d'envoi. Vous pouvez fermer : l'envoi continue en arrière-plan." = "%lld file(s) uploading. You can close: the upload continues in the background.";
+"%lld fichier(s) non envoyé(s)." = "%lld file(s) not sent.";
+
+/* Widgets */
+"Vers le PC" = "To PC";
+"Du PC" = "From PC";
+"Presse-papiers PC" = "PC clipboard";
+"Envoyer le presse-papiers au PC ou récupérer celui du PC." = "Send the clipboard to the PC or get the PC's clipboard.";
+
+/* Messages and errors */
+"Envoyé au PC." = "Sent to PC.";
+"Copié depuis le PC." = "Copied from PC.";
+"Fichier reçu du PC" = "File received from PC";
+"Le presse-papiers est vide." = "The clipboard is empty.";
+"Le presse-papiers du PC est vide." = "The PC clipboard is empty.";
+"Rien à envoyer." = "Nothing to send.";
+"Aucun PC appairé. Ouvrez PhoneBridge et scannez le QR code affiché sur le PC." = "No paired PC. Open PhoneBridge and scan the QR code shown on the PC.";
+"Ce QR code n'est pas un code d'appairage PhoneBridge valide." = "This QR code is not a valid PhoneBridge pairing code.";
+"Le certificat du PC ne correspond pas à celui de l'appairage. Ré-appairez si vous avez réinstallé PhoneBridge sur le PC." = "The PC certificate does not match the paired one. Pair again if you reinstalled PhoneBridge on the PC.";
+"Le PC a refusé cet iPhone (jeton révoqué ?). Ré-appairez." = "The PC refused this iPhone (revoked token?). Pair again.";
+"PC injoignable. Vérifiez le Wi-Fi, que PhoneBridge tourne sur le PC et que l'accès au réseau local est autorisé." = "PC unreachable. Check Wi-Fi, that PhoneBridge is running on the PC and that local network access is allowed.";
+"Téléchargement incomplet, il reprendra à la prochaine tentative." = "Incomplete download, it will resume next time.";
+"Impossible d'enregistrer l'appairage dans le trousseau." = "Could not save the pairing in the Keychain.";
+"Réponse inattendue du PC." = "Unexpected response from the PC.";
+"Code d'appairage expiré. Affichez un nouveau QR code sur le PC." = "Pairing code expired. Show a new QR code on the PC.";
+"Fichier trop volumineux pour le PC." = "File too large for the PC.";
+"Trop de tentatives. Réessayez dans une minute." = "Too many attempts. Try again in a minute.";
+"Erreur du PC (%lld)." = "PC error (%lld).";
