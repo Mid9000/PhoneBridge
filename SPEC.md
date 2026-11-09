@@ -1,10 +1,9 @@
 # PhoneBridge — Cahier des charges v2 pour Claude Code
 
 > Nom de travail : **PhoneBridge** (renommable).
-> Objectif : faire de l'iPhone 13 d'Arthur et de son PC Windows 11 un duo qui se comporte **comme un iPhone et un Mac** : tout ce qu'il fait sur son iPhone (recevoir et **répondre** à un message, voir ses notifications, copier-coller, envoyer des fichiers, voir un appel) doit pouvoir se faire **depuis le PC**, avec une interface Windows qui ressemble à une **app macOS**.
-> Auteur : Arthur (pseudo Mid9), lycéen en Terminale (spés Maths + NSI), Rennes. Projet perso, pas de budget, pas de Mac.
+> Objectif : faire de l'iPhone 13 et de son PC Windows 11 un duo qui se comporte **comme un iPhone et un Mac** : tout ce qu'il fait sur son iPhone (recevoir et **répondre** à un message, voir ses notifications, copier-coller, envoyer des fichiers, voir un appel) doit pouvoir se faire **depuis le PC**, avec une interface Windows qui ressemble à une **app macOS**.
 
-### Changements depuis la v1 (décisions d'Arthur)
+### Changements depuis la v1 (décisions de l'auteur)
 - **Retirés (hors périmètre, peut-être plus tard)** : sauvegarde auto des photos, miroir d'écran iPhone, pilotage du PC depuis l'iPhone, iPhone en webcam.
 - **Gardés et priorisés** : liens, **presse-papiers dans les deux sens**, codes de vérification (OTP), appels entrants, batterie, historique.
 - **Poussé au maximum** : **répondre aux messages depuis le PC** devient une fonction centrale (plusieurs pistes en cascade, section 6).
@@ -15,9 +14,9 @@
 ## 0. Instructions pour Claude Code
 
 1. Lis tout ce fichier avant de coder. Copie-le à la racine du repo sous `SPEC.md` et crée un `CLAUDE.md` court qui y renvoie.
-2. Travaille **phase par phase** (section 12). Ne passe à la suivante qu'après validation des critères d'acceptation **par Arthur sur son vrai matériel**.
+2. Travaille **phase par phase** (section 12). Ne passe à la suivante qu'après validation des critères d'acceptation **par l'auteur sur son vrai matériel**.
 3. Les parties marquées **SPIKE** sont des expérimentations risquées : fais un prototype minimal, dis honnêtement s'il marche, applique le plan B. Ne présente jamais un spike comme acquis.
-4. Arthur est débutant-intermédiaire : explique tes choix en quelques lignes, donne les commandes exactes (PowerShell), réponds en français ; code et identifiants en anglais.
+4. l'auteur est débutant-intermédiaire : explique tes choix en quelques lignes, donne les commandes exactes (PowerShell), réponds en français ; code et identifiants en anglais.
 5. Ne suppose rien de ce qui est marqué **[À VÉRIFIER]** : teste ou demande.
 6. Jamais d'argent, de compte payant ni de jailbreak. Si une étape l'exige, propose le plan B.
 7. **Ne copie aucun asset Apple** (voir 10.6).
