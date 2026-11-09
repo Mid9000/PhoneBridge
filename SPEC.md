@@ -1,7 +1,7 @@
 # PhoneBridge — Cahier des charges v2 pour Claude Code
 
 > Nom de travail : **PhoneBridge** (renommable).
-> Objectif : faire de l'iPhone 13 d'Arthur et de son PC Windows 11 un duo qui se comporte **comme un iPhone et un Mac** : tout ce qu'il fait sur son iPhone (recevoir et **répondre** à un message, voir ses notifications, copier-coller, envoyer des fichiers, voir un appel) doit pouvoir se faire **depuis le PC**, avec une interface Windows qui ressemble à une **app macOS**.
+> Objectif : faire de l'iPhone 13 et de son PC Windows 11 un duo qui se comporte **comme un iPhone et un Mac** : tout ce qu'il fait sur son iPhone (recevoir et **répondre** à un message, voir ses notifications, copier-coller, envoyer des fichiers, voir un appel) doit pouvoir se faire **depuis le PC**, avec une interface Windows qui ressemble à une **app macOS**.
 > Auteur : Arthur (pseudo Mid9), lycéen en Terminale (spés Maths + NSI), Rennes. Projet perso, pas de budget, pas de Mac.
 
 ### Changements depuis la v1 (décisions d'Arthur)
