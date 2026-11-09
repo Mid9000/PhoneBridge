@@ -21,3 +21,5 @@ ios/*.xcodeproj/
 ios/build/
 ios/devices.json
 publish/
+
+SPEC.md

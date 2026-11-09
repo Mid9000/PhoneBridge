@@ -24,7 +24,7 @@ Ouvre **PowerShell** (touche Windows, tape `powershell`, Entrée). Lance ces lig
 Get-NetIPAddress -AddressFamily IPv4 | Select-Object InterfaceAlias, IPAddress
 
 # Remplace l'IP par la tienne
-$ip = '192.168.1.20'
+$ip = '192.168.1.87'
 
 # Jeton de l'iPhone : point bloquant, voir docs/shortcuts-guide.md section 1.
 # Colle-le ici seulement, ne l'enregistre dans aucun fichier.
